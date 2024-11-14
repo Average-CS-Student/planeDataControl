@@ -4,10 +4,10 @@
 #include "DataBaseConnection.h"
 #include "Arinc429.h"
 
-//#define HOST_NAME ""
-//#define USER_NAME ""
-//#define PASSWORD ""
-//#define SCHEMA ""
+#define HOST_NAME ""
+#define USER_NAME ""
+#define PASSWORD ""
+#define SCHEMA ""
 
 DataBaseConnection::DataBaseConnection() {
 	try {
