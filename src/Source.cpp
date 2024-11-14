@@ -49,7 +49,6 @@ int main() {
 		timeNew = std::chrono::high_resolution_clock::now();
 		timer += timeNew - timeLast;
 		timeLast = timeNew;
-		Sleep(500);
 		if (timer >= std::chrono::seconds(DB_UPDATE_INTERVAL_SECONDS)) {
 			timer -= std::chrono::seconds(DB_UPDATE_INTERVAL_SECONDS);
 			std::cout << "Updating database..." << std::endl;
