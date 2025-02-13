@@ -7,9 +7,13 @@
 #include "Arinc429.h"
 #include "COMCon.h"
 #include "DataBaseConnection.h"
+#include "NeuralNetwork.h"
 
 #define COM "\\\\.\\COM3"
-#define DB_UPDATE_INTERVAL_SECONDS 60
+#define DB_UPDATE_INTERVAL_SECONDS 15
+#define NN_MODEL_PATH ""
+#define TEST_DATA_PATH ""
+#define TEST_TARGETS_PATH ""
 
 std::future<int> future;
 
@@ -38,6 +42,16 @@ int main() {
 	std::cout << "Reciving data on " << COM << std::endl;
 	std::cout << "Seconds between database updates: " << DB_UPDATE_INTERVAL_SECONDS << std::endl;
 
+	
+	std::vector<std::string> labels = { "052", "053", "054", "205", "206", "210", "217", "256", "312", "316", "317", "324", "325", "326", "327", "330", "340", "342", "345", "347", "365" };
+
+	NeuralNetwork* ann;
+	ann = new FFN();
+	// load neural network
+	ann->LoadModel(NN_MODEL_PATH);
+	// test error on training set
+	std::cout << ann->TestClassificationError(TEST_DATA_PATH, TEST_TARGETS_PATH) << std::endl;
+
 	// main loop
 	while (true) {
 		if (com.ReadCOM(comData)) {
@@ -51,14 +65,28 @@ int main() {
 		timeLast = timeNew;
 		if (timer >= std::chrono::seconds(DB_UPDATE_INTERVAL_SECONDS)) {
 			timer -= std::chrono::seconds(DB_UPDATE_INTERVAL_SECONDS);
-			std::cout << "Updating database..." << std::endl;
 
-			
-			future = std::async(std::launch::async, [&dbCon, &upToDateData] {
-				return dbCon.InsertArinc429Data(upToDateData);
-			});
+			std::vector<Arinc429> toNN = std::vector<Arinc429>();
+			for (const auto& word : upToDateData) {
+				if (std::any_of(labels.begin(), labels.end(), [&word](std::string x) {return x == word.second.label; })) {
+					toNN.push_back(word.second);
+				}
+			}
 
-			std::cout << "Rows inserted: " << future._Get_value() << std::endl;
+			int predictedClass = ann->Predict(&toNN);
+			switch (predictedClass)
+			{
+			case 0:
+				std::cout << "All systems fine\n";
+				break;
+			case 1:
+				std::cout << "Left Engine Fire!\n";
+				break;
+			default:
+				break;
+			}
+
+			future = std::async([&dbCon, &upToDateData] { return dbCon.InsertArinc429Data(upToDateData); });
 		}
 	}
 
